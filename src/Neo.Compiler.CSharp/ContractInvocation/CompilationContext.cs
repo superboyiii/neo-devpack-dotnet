@@ -9,7 +9,10 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
-using Neo.SmartContract.Framework.ContractInvocation;
+extern alias scfx;
+using scfx::Neo.SmartContract.Framework;
+using scfx::Neo.SmartContract.Framework.ContractInvocation;
+using scfx::Neo.SmartContract.Framework.Services;
 using System;
 using System.Collections.Generic;
 
@@ -21,7 +24,7 @@ namespace Neo.Compiler.ContractInvocation
     /// </summary>
     public class CompilationContext
     {
-        private readonly List<CompilationMessage> _messages;
+        private readonly System.Collections.Generic.List<CompilationMessage> _messages;
         private IBlockchainInterface? _blockchainInterface;
 
         /// <summary>
@@ -69,7 +72,7 @@ namespace Neo.Compiler.ContractInvocation
         /// </summary>
         public CompilationContext()
         {
-            _messages = new List<CompilationMessage>();
+            _messages = new System.Collections.Generic.List<CompilationMessage>();
             NetworkContext = new NetworkContext();
         }
 
@@ -236,9 +239,9 @@ namespace Neo.Compiler.ContractInvocation
     /// </summary>
     internal class NullBlockchainInterface : IBlockchainInterface
     {
-        public bool ContractExists(UInt160 contractHash) => false;
+        public bool ContractExists(scfx::Neo.SmartContract.Framework.UInt160 contractHash) => false;
         public uint GetBlockHeight() => 0;
-        public ContractManifest? GetContractManifest(UInt160 contractHash) => null;
-        public byte[]? GetContractNef(UInt160 contractHash) => null;
+        public ContractManifest? GetContractManifest(scfx::Neo.SmartContract.Framework.UInt160 contractHash) => null;
+        public byte[]? GetContractNef(scfx::Neo.SmartContract.Framework.UInt160 contractHash) => null;
     }
 }
