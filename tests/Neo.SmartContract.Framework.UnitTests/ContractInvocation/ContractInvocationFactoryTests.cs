@@ -31,7 +31,7 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void DefaultNetworkContext_ShouldReturnValidContext()
         {
             var context = ContractInvocationFactory.DefaultNetworkContext;
-            
+
             Assert.IsNotNull(context);
             Assert.AreEqual("privnet", context.CurrentNetwork);
         }
@@ -41,9 +41,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             var identifier = "TestContract";
             var projectPath = "./TestContract.csproj";
-            
+
             var reference = ContractInvocationFactory.RegisterDevelopmentContract(identifier, projectPath);
-            
+
             Assert.IsNotNull(reference);
             Assert.AreEqual(identifier, reference.Identifier);
             Assert.AreEqual(projectPath, reference.ProjectPath);
@@ -55,9 +55,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             var identifier = "NEP17Token";
             var networkContext = new NetworkContext("testnet");
-            
+
             var reference = ContractInvocationFactory.RegisterDeployedContract(identifier, networkContext);
-            
+
             Assert.IsNotNull(reference);
             Assert.AreEqual(identifier, reference.Identifier);
             Assert.AreEqual(networkContext, reference.NetworkContext);
@@ -70,9 +70,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             var identifier = "TestContract";
             var address = UInt160.Zero;
             var network = "testnet";
-            
+
             var reference = ContractInvocationFactory.RegisterDeployedContract(identifier, address, network);
-            
+
             Assert.IsNotNull(reference);
             Assert.AreEqual(identifier, reference.Identifier);
             Assert.AreEqual(network, reference.NetworkContext.CurrentNetwork);
@@ -86,10 +86,10 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             var privnetAddr = new UInt160(new byte[20] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
             var testnetAddr = new UInt160(new byte[20] { 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 });
             var mainnetAddr = new UInt160(new byte[20] { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 1, 2, 3, 4, 5, 6, 7, 8, 9 });
-            
+
             var reference = ContractInvocationFactory.RegisterMultiNetworkContract(
                 identifier, privnetAddr, testnetAddr, mainnetAddr, "testnet");
-            
+
             Assert.IsNotNull(reference);
             Assert.AreEqual(identifier, reference.Identifier);
             Assert.AreEqual("testnet", reference.NetworkContext.CurrentNetwork);
@@ -102,7 +102,7 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void GetContractReference_WithUnknownIdentifier_ShouldReturnNull()
         {
             var reference = ContractInvocationFactory.GetContractReference("UnknownContract");
-            
+
             Assert.IsNull(reference);
         }
 
@@ -114,9 +114,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
                 ReferenceType = ContractReferenceType.Development,
                 ProjectPath = "./TestContract.csproj"
             };
-            
+
             var reference = ContractInvocationFactory.CreateFromAttribute(attribute);
-            
+
             Assert.IsInstanceOfType(reference, typeof(DevelopmentContractReference));
             Assert.AreEqual("TestContract", reference.Identifier);
         }
@@ -129,9 +129,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
                 ReferenceType = ContractReferenceType.Deployed,
                 TestnetAddress = "0x1234567890123456789012345678901234567890"
             };
-            
+
             var reference = ContractInvocationFactory.CreateFromAttribute(attribute);
-            
+
             Assert.IsInstanceOfType(reference, typeof(DeployedContractReference));
             Assert.AreEqual("NEP17Token", reference.Identifier);
         }
@@ -145,17 +145,17 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
                 ReferenceType = ContractReferenceType.Auto,
                 ProjectPath = "./TestContract.csproj"
             };
-            
+
             var devReference = ContractInvocationFactory.CreateFromAttribute(devAttribute);
             Assert.IsInstanceOfType(devReference, typeof(DevelopmentContractReference));
-            
+
             // Test auto-detection for deployed contract (has network addresses)
             var deployedAttribute = new ContractReferenceAttribute("NEP17Token")
             {
                 ReferenceType = ContractReferenceType.Auto,
                 TestnetAddress = "0x1234567890123456789012345678901234567890"
             };
-            
+
             var deployedReference = ContractInvocationFactory.CreateFromAttribute(deployedAttribute);
             Assert.IsInstanceOfType(deployedReference, typeof(DeployedContractReference));
         }
@@ -163,7 +163,7 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         [TestMethod]
         public void CreateFromAttribute_WithNullAttribute_ShouldThrowArgumentNullException()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => 
+            Assert.ThrowsException<ArgumentNullException>(() =>
                 ContractInvocationFactory.CreateFromAttribute(null!));
         }
 
@@ -172,9 +172,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             ContractInvocationFactory.RegisterDevelopmentContract("DevContract", "./dev.csproj");
             ContractInvocationFactory.RegisterDeployedContract("DeployedContract", UInt160.Zero);
-            
+
             var contracts = ContractInvocationFactory.GetAllRegisteredContracts();
-            
+
             Assert.AreEqual(2, contracts.Count);
             Assert.IsTrue(contracts.Any(c => c.Identifier == "DevContract"));
             Assert.IsTrue(contracts.Any(c => c.Identifier == "DeployedContract"));
@@ -185,11 +185,11 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             ContractInvocationFactory.RegisterDevelopmentContract("TestContract1", "./test1.csproj");
             ContractInvocationFactory.RegisterDevelopmentContract("TestContract2", "./test2.csproj");
-            
+
             Assert.AreEqual(2, ContractInvocationFactory.GetAllRegisteredContracts().Count);
-            
+
             ContractInvocationFactory.ClearRegisteredContracts();
-            
+
             Assert.AreEqual(0, ContractInvocationFactory.GetAllRegisteredContracts().Count);
         }
 
@@ -198,15 +198,15 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             var testnetAddr = UInt160.Zero;
             var mainnetAddr = new UInt160(new byte[20] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
-            
+
             var reference = ContractInvocationFactory.RegisterMultiNetworkContract(
                 "TestContract", null, testnetAddr, mainnetAddr, "testnet");
-            
+
             Assert.AreEqual("testnet", reference.NetworkContext.CurrentNetwork);
             Assert.AreEqual(testnetAddr, reference.NetworkContext.GetCurrentNetworkAddress());
-            
+
             ContractInvocationFactory.SwitchNetwork("mainnet");
-            
+
             Assert.AreEqual("mainnet", reference.NetworkContext.CurrentNetwork);
             Assert.AreEqual("mainnet", ContractInvocationFactory.DefaultNetworkContext.CurrentNetwork);
             Assert.AreEqual(mainnetAddr, reference.NetworkContext.GetCurrentNetworkAddress());

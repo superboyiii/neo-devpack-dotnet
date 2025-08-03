@@ -98,7 +98,7 @@ namespace Neo.Compiler.ContractInvocation
         /// <param name="hash">The resolved contract hash</param>
         public void AddResolvedHash(string identifier, UInt160 hash)
         {
-            if (_resolvedReferences.TryGetValue(identifier, out var reference) && 
+            if (_resolvedReferences.TryGetValue(identifier, out var reference) &&
                 reference is DevelopmentContractReference devRef)
             {
                 devRef.ResolveHash(hash);
@@ -263,7 +263,7 @@ namespace Neo.Compiler.ContractInvocation
         private bool IsContractReferenceAttribute(AttributeData attribute)
         {
             return attribute.AttributeClass?.Name == nameof(ContractReferenceAttribute) &&
-                   attribute.AttributeClass.ContainingNamespace?.ToDisplayString() == 
+                   attribute.AttributeClass.ContainingNamespace?.ToDisplayString() ==
                    "Neo.SmartContract.Framework.ContractInvocation.Attributes";
         }
 

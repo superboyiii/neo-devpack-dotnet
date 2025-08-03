@@ -24,9 +24,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             var identifier = "TestContract";
             var projectPath = "./TestContract.csproj";
             var networkContext = new NetworkContext();
-            
+
             var reference = new DevelopmentContractReference(identifier, projectPath, networkContext);
-            
+
             Assert.AreEqual(identifier, reference.Identifier);
             Assert.AreEqual(projectPath, reference.ProjectPath);
             Assert.AreEqual(networkContext, reference.NetworkContext);
@@ -38,14 +38,14 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         [TestMethod]
         public void Constructor_WithNullIdentifier_ShouldThrowArgumentNullException()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => 
+            Assert.ThrowsException<ArgumentNullException>(() =>
                 new DevelopmentContractReference(null!, "./test.csproj"));
         }
 
         [TestMethod]
         public void Constructor_WithNullProjectPath_ShouldThrowArgumentNullException()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => 
+            Assert.ThrowsException<ArgumentNullException>(() =>
                 new DevelopmentContractReference("TestContract", null!));
         }
 
@@ -53,7 +53,7 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void Constructor_WithNullNetworkContext_ShouldCreateDefaultNetworkContext()
         {
             var reference = new DevelopmentContractReference("TestContract", "./test.csproj");
-            
+
             Assert.IsNotNull(reference.NetworkContext);
             Assert.AreEqual("privnet", reference.NetworkContext.CurrentNetwork);
         }
@@ -63,9 +63,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             var reference = new DevelopmentContractReference("TestContract", "./test.csproj");
             var hash = UInt160.Zero;
-            
+
             reference.ResolveHash(hash);
-            
+
             Assert.AreEqual(hash, reference.ResolvedHash);
             Assert.IsTrue(reference.IsResolved);
         }
@@ -74,7 +74,7 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void ResolveHash_WithNullHash_ShouldThrowArgumentNullException()
         {
             var reference = new DevelopmentContractReference("TestContract", "./test.csproj");
-            
+
             Assert.ThrowsException<ArgumentNullException>(() => reference.ResolveHash(null!));
         }
 
@@ -82,9 +82,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void FromProject_ShouldCreateReferenceWithCorrectProperties()
         {
             var projectPath = "./TestContract/TestContract.csproj";
-            
+
             var reference = DevelopmentContractReference.FromProject(projectPath);
-            
+
             Assert.AreEqual("TestContract", reference.Identifier);
             Assert.AreEqual(projectPath, reference.ProjectPath);
             Assert.IsTrue(reference.CompileAsDependency);
@@ -93,9 +93,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         [TestMethod]
         public void FromProject_WithNullOrEmptyPath_ShouldThrowArgumentNullException()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => 
+            Assert.ThrowsException<ArgumentNullException>(() =>
                 DevelopmentContractReference.FromProject(null!));
-            Assert.ThrowsException<ArgumentNullException>(() => 
+            Assert.ThrowsException<ArgumentNullException>(() =>
                 DevelopmentContractReference.FromProject(""));
         }
 
@@ -103,9 +103,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void CompileAsDependency_ShouldBeConfigurable()
         {
             var reference = new DevelopmentContractReference("TestContract", "./test.csproj");
-            
+
             Assert.IsTrue(reference.CompileAsDependency);
-            
+
             reference.CompileAsDependency = false;
             Assert.IsFalse(reference.CompileAsDependency);
         }
@@ -114,11 +114,11 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void IsResolved_ShouldReturnTrueOnlyAfterResolveHash()
         {
             var reference = new DevelopmentContractReference("TestContract", "./test.csproj");
-            
+
             Assert.IsFalse(reference.IsResolved);
-            
+
             reference.ResolveHash(UInt160.Zero);
-            
+
             Assert.IsTrue(reference.IsResolved);
         }
     }
