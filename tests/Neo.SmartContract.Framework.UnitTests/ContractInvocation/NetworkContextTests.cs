@@ -9,9 +9,11 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+extern alias scfx;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neo.SmartContract.Framework.ContractInvocation;
+using scfx::Neo.SmartContract.Framework.ContractInvocation;
 using System;
+using System.Linq;
 
 namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
 {
@@ -125,9 +127,9 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             var networks = context.ConfiguredNetworks;
 
             Assert.AreEqual(3, networks.Count);
-            Assert.IsTrue(networks.Contains("privnet"));
-            Assert.IsTrue(networks.Contains("testnet"));
-            Assert.IsTrue(networks.Contains("mainnet"));
+            Assert.IsTrue(networks.Any(n => n == "privnet"));
+            Assert.IsTrue(networks.Any(n => n == "testnet"));
+            Assert.IsTrue(networks.Any(n => n == "mainnet"));
         }
 
         [TestMethod]

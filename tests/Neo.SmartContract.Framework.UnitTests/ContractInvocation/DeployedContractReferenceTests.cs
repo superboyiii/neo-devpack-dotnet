@@ -9,8 +9,10 @@
 // Redistribution and use in source and binary forms with or without
 // modifications are permitted.
 
+extern alias scfx;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Neo.SmartContract.Framework.ContractInvocation;
+using scfx::Neo.SmartContract.Framework.ContractInvocation;
+using scfx::Neo.SmartContract.Framework.Services;
 using System;
 
 namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
