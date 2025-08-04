@@ -30,10 +30,10 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             // Test basic proxy pattern
             var identifier = "TestToken";
             var contractHash = CreateMockUInt160();
-            
+
             var reference = new DeployedContractReference(identifier);
             reference.NetworkContext.SetNetworkAddress("testnet", contractHash);
-            
+
             Assert.IsNotNull(reference);
             Assert.AreEqual(identifier, reference.Identifier);
             Assert.IsTrue(reference.IsResolved);
@@ -47,19 +47,19 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             var privnetAddr = CreateMockUInt160();
             var testnetAddr = CreateMockUInt160();
             var mainnetAddr = CreateMockUInt160();
-            
+
             var reference = DeployedContractReference.CreateMultiNetwork(
                 identifier, privnetAddr, testnetAddr, mainnetAddr, "testnet");
-            
+
             // Verify initial network
             Assert.AreEqual("testnet", reference.NetworkContext.CurrentNetwork);
             Assert.AreEqual(testnetAddr, reference.NetworkContext.GetCurrentNetworkAddress());
-            
+
             // Switch networks
             reference.NetworkContext.SwitchNetwork("mainnet");
             Assert.AreEqual("mainnet", reference.NetworkContext.CurrentNetwork);
             Assert.AreEqual(mainnetAddr, reference.NetworkContext.GetCurrentNetworkAddress());
-            
+
             // Switch to privnet
             reference.NetworkContext.SwitchNetwork("privnet");
             Assert.AreEqual(privnetAddr, reference.NetworkContext.GetCurrentNetworkAddress());
@@ -71,17 +71,17 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             // Test development contract reference
             var identifier = "DevContract";
             var projectPath = "./TestProject.csproj";
-            
+
             var reference = new DevelopmentContractReference(identifier, projectPath);
-            
+
             Assert.AreEqual(identifier, reference.Identifier);
             Assert.AreEqual(projectPath, reference.ProjectPath);
             Assert.IsFalse(reference.IsResolved);
-            
+
             // Simulate hash resolution
             var hash = CreateMockUInt160();
             reference.ResolveHash(hash);
-            
+
             Assert.IsTrue(reference.IsResolved);
             Assert.AreEqual(hash, reference.ResolvedHash);
         }
@@ -92,35 +92,29 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             // Test custom method mapping
             var attr = new CustomMethodAttribute("actualMethod")
             {
-                CallFlags = CallFlags.All,
-                TransformStrategy = ParameterTransform.JsonSerialize
+                CallFlags = scfx::Neo.SmartContract.Framework.Services.CallFlags.All,
+                ParameterTransform = ParameterTransformStrategy.SerializeToByteArray
             };
-            
+
             Assert.AreEqual("actualMethod", attr.MethodName);
-            Assert.AreEqual(CallFlags.All, attr.CallFlags);
-            Assert.AreEqual(ParameterTransform.JsonSerialize, attr.TransformStrategy);
+            Assert.AreEqual(scfx::Neo.SmartContract.Framework.Services.CallFlags.All, attr.CallFlags);
+            Assert.AreEqual(ParameterTransformStrategy.SerializeToByteArray, attr.ParameterTransform);
         }
 
         [TestMethod]
         public void TestMethodResolution()
         {
-            // Test method resolution with custom mapping
-            var resolver = new MethodResolver();
-            var customMethod = "customOp";
-            var actualMethod = "performOperation";
-            
-            resolver.RegisterMethod(customMethod, new MethodResolutionInfo
-            {
-                ContractMethodName = actualMethod,
-                CallFlags = CallFlags.All
-            });
-            
-            Assert.IsTrue(resolver.HasMethod(customMethod));
-            
-            var resolved = resolver.ResolveMethod(customMethod);
-            Assert.IsNotNull(resolved);
-            Assert.AreEqual(actualMethod, resolved.ContractMethodName);
-            Assert.AreEqual(CallFlags.All, resolved.CallFlags);
+            // Test method resolution with actual MethodResolver API
+            var contract = new DeployedContractReference("TestContract");
+            contract.NetworkContext.SetNetworkAddress("testnet", CreateMockUInt160());
+
+            var resolution = MethodResolver.ResolveMethod(contract, "transfer", new object[] { "arg1", "arg2" });
+
+            Assert.IsNotNull(resolution);
+            Assert.AreEqual("transfer", resolution.OriginalMethodName);
+            Assert.AreEqual("transfer", resolution.ResolvedMethodName);
+            Assert.IsNotNull(resolution.OriginalParameters);
+            Assert.AreEqual(2, resolution.OriginalParameters.Length);
         }
 
         [TestMethod]
@@ -128,16 +122,16 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             // Test parameter transformation strategies
             var transformer = new DefaultParameterTransformer();
-            
+
             // Test pass-through
             var input1 = new object[] { 1, "test", true };
-            var result1 = transformer.Transform(input1, ParameterTransform.None);
+            var result1 = transformer.Transform(input1, ParameterTransformStrategy.None);
             CollectionAssert.AreEqual(input1, result1);
-            
+
             // Test JSON serialization
             var complexObj = new { Name = "Test", Value = 123 };
             var input2 = new object[] { complexObj };
-            var result2 = transformer.Transform(input2, ParameterTransform.JsonSerialize);
+            var result2 = transformer.Transform(input2, ParameterTransformStrategy.SerializeToByteArray);
             Assert.IsNotNull(result2);
             Assert.AreEqual(1, result2.Length);
         }
@@ -148,11 +142,11 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             // Test proxy base class functionality
             var proxy = new TestContractProxy();
             var reference = new DeployedContractReference("TestProxy");
-            
+
             // Verify proxy can hold reference
             TestContractProxy.SetContractReference(reference);
             var retrieved = TestContractProxy.GetContractReference();
-            
+
             Assert.AreSame(reference, retrieved);
         }
 
@@ -161,17 +155,17 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             // Test network context validation
             var context = new NetworkContext("testnet");
-            
+
             // Test null network name
-            Assert.ThrowsException<ArgumentNullException>(() => 
+            Assert.ThrowsException<ArgumentNullException>(() =>
                 context.SetNetworkAddress(null!, CreateMockUInt160()));
-            
+
             // Test null address
-            Assert.ThrowsException<ArgumentNullException>(() => 
+            Assert.ThrowsException<ArgumentNullException>(() =>
                 context.SetNetworkAddress("testnet", (scfx::Neo.SmartContract.Framework.UInt160)null!));
-            
+
             // Test empty network name
-            Assert.ThrowsException<ArgumentNullException>(() => 
+            Assert.ThrowsException<ArgumentNullException>(() =>
                 context.SetNetworkAddress("", CreateMockUInt160()));
         }
 
@@ -180,21 +174,21 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             // Test factory pattern
             ContractInvocationFactory.ClearRegisteredContracts();
-            
+
             // Register development contract
             var devRef = ContractInvocationFactory.RegisterDevelopmentContract(
                 "DevContract", "./dev.csproj");
             Assert.IsNotNull(devRef);
-            
+
             // Register deployed contract
             var deployRef = ContractInvocationFactory.RegisterDeployedContract(
                 "DeployedContract", CreateMockUInt160(), "testnet");
             Assert.IsNotNull(deployRef);
-            
+
             // Verify retrieval
             var contracts = ContractInvocationFactory.GetAllRegisteredContracts();
             Assert.AreEqual(2, contracts.Count);
-            
+
             // Test retrieval by identifier
             var retrieved = ContractInvocationFactory.GetContractReference("DevContract");
             Assert.AreSame(devRef, retrieved);
@@ -205,7 +199,7 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             // Test complex scenario with multiple contracts
             ContractInvocationFactory.ClearRegisteredContracts();
-            
+
             // Setup multiple contracts
             var tokenContract = ContractInvocationFactory.RegisterMultiNetworkContract(
                 "TokenContract",
@@ -214,22 +208,22 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
                 CreateMockUInt160(),
                 "testnet"
             );
-            
+
             var dexContract = ContractInvocationFactory.RegisterDeployedContract(
                 "DexContract", CreateMockUInt160(), "testnet"
             );
-            
+
             var governanceContract = ContractInvocationFactory.RegisterDevelopmentContract(
                 "GovernanceContract", "../governance/governance.csproj"
             );
-            
+
             // Verify all registered
             var all = ContractInvocationFactory.GetAllRegisteredContracts();
             Assert.AreEqual(3, all.Count);
-            
+
             // Test network switching affects all
             ContractInvocationFactory.SwitchNetwork("mainnet");
-            
+
             Assert.AreEqual("mainnet", tokenContract.NetworkContext.CurrentNetwork);
             Assert.AreEqual("mainnet", dexContract.NetworkContext.CurrentNetwork);
             Assert.AreEqual("mainnet", governanceContract.NetworkContext.CurrentNetwork);
@@ -248,6 +242,10 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         {
             private static IContractReference? _reference;
 
+            public TestContractProxy() : base(_reference!)
+            {
+            }
+
             public static void SetContractReference(IContractReference reference)
             {
                 _reference = reference;
@@ -260,15 +258,15 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         }
 
         // Helper class for parameter transformation
-        private class DefaultParameterTransformer : IParameterTransformer
+        private class DefaultParameterTransformer
         {
-            public object[] Transform(object[] parameters, ParameterTransform strategy)
+            public object[] Transform(object[] parameters, ParameterTransformStrategy strategy)
             {
                 switch (strategy)
                 {
-                    case ParameterTransform.None:
+                    case ParameterTransformStrategy.None:
                         return parameters;
-                    case ParameterTransform.JsonSerialize:
+                    case ParameterTransformStrategy.SerializeToByteArray:
                         // Simplified JSON serialization
                         return new object[] { System.Text.Json.JsonSerializer.Serialize(parameters[0]) };
                     default:

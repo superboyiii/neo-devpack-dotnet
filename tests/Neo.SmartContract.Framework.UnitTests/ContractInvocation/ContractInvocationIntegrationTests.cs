@@ -34,7 +34,7 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void TestEndToEndTokenSwapScenario()
         {
             // Simulate a DEX scenario with multiple token contracts
-            
+
             // Register token contracts
             var token1 = ContractInvocationFactory.RegisterMultiNetworkContract(
                 "Token1",
@@ -43,7 +43,7 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
                 CreateMockUInt160(3),
                 "testnet"
             );
-            
+
             var token2 = ContractInvocationFactory.RegisterMultiNetworkContract(
                 "Token2",
                 CreateMockUInt160(4),
@@ -51,21 +51,21 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
                 CreateMockUInt160(6),
                 "testnet"
             );
-            
+
             // Register DEX contract
             var dex = ContractInvocationFactory.RegisterDeployedContract(
                 "DexContract",
                 CreateMockUInt160(7),
                 "testnet"
             );
-            
+
             // Verify all contracts are registered
             var contracts = ContractInvocationFactory.GetAllRegisteredContracts();
             Assert.AreEqual(3, contracts.Count);
-            
+
             // Simulate network switch
             ContractInvocationFactory.SwitchNetwork("mainnet");
-            
+
             // Verify all contracts switched
             Assert.AreEqual("mainnet", token1.NetworkContext.CurrentNetwork);
             Assert.AreEqual("mainnet", token2.NetworkContext.CurrentNetwork);
@@ -76,74 +76,52 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void TestGovernanceVotingScenario()
         {
             // Simulate a governance system with multiple contracts
-            
+
             // Register governance contracts
             var votingContract = ContractInvocationFactory.RegisterDevelopmentContract(
                 "VotingContract", "./voting/VotingContract.csproj"
             );
-            
+
             var treasuryContract = ContractInvocationFactory.RegisterDeployedContract(
                 "TreasuryContract", CreateMockUInt160(8)
             );
-            
+
             var stakingContract = ContractInvocationFactory.RegisterMultiNetworkContract(
                 "StakingContract",
                 CreateMockUInt160(9),
                 CreateMockUInt160(10),
                 CreateMockUInt160(11)
             );
-            
-            // Create method resolver for complex governance operations
-            var resolver = new MethodResolver();
-            
-            resolver.RegisterMethod("createProposal", new MethodResolutionInfo
-            {
-                ContractMethodName = "submitProposal",
-                CallFlags = CallFlags.All,
-                RequiredParameters = new[] { typeof(string), typeof(uint), typeof(byte[]) }
-            });
-            
-            resolver.RegisterMethod("executeProposal", new MethodResolutionInfo
-            {
-                ContractMethodName = "execute",
-                CallFlags = CallFlags.All,
-                TransformParameters = (args) => {
-                    // Transform proposal ID to proper format
-                    return new object[] { ConvertToBytes((int)args[0]) };
-                }
-            });
-            
-            // Verify resolver
-            Assert.IsTrue(resolver.HasMethod("createProposal"));
-            Assert.IsTrue(resolver.HasMethod("executeProposal"));
-            
-            var createMethod = resolver.ResolveMethod("createProposal");
-            Assert.AreEqual("submitProposal", createMethod.ContractMethodName);
+
+            // Test method resolution is working with contracts
+            var voteResolution = MethodResolver.ResolveMethod(votingContract, "vote", new object[] { 1, true });
+            Assert.IsNotNull(voteResolution);
+            Assert.AreEqual("vote", voteResolution.OriginalMethodName);
         }
 
         [TestMethod]
         public void TestDeFiProtocolIntegration()
         {
             // Test complex DeFi protocol with multiple interacting contracts
-            
+
             var contracts = new Dictionary<string, IContractReference>();
-            
+
             // Core protocol contracts
             contracts["LendingPool"] = ContractInvocationFactory.RegisterDeployedContract(
                 "LendingPool", CreateMockUInt160(12)
             );
-            
+
             contracts["Oracle"] = ContractInvocationFactory.RegisterMultiNetworkContract(
                 "PriceOracle",
                 CreateMockUInt160(13),
                 CreateMockUInt160(14),
                 CreateMockUInt160(15)
             );
-            
+
             contracts["Collateral"] = ContractInvocationFactory.RegisterDevelopmentContract(
                 "CollateralManager", "../defi/CollateralManager.csproj"
             );
-            
+
             // Asset contracts
             var assets = new[] { "USDT", "USDC", "DAI", "WBTC", "WETH" };
             foreach (var asset in assets)
@@ -152,11 +130,11 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
                     asset, CreateMockUInt160(asset.GetHashCode())
                 );
             }
-            
+
             // Verify all contracts registered
             var all = ContractInvocationFactory.GetAllRegisteredContracts();
             Assert.AreEqual(8, all.Count); // 3 core + 5 assets
-            
+
             // Test batch operations
             var assetContracts = all.Where(c => assets.Contains(c.Identifier)).ToList();
             Assert.AreEqual(5, assetContracts.Count);
@@ -166,23 +144,23 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void TestContractUpgradeScenario()
         {
             // Test contract upgrade scenario with address changes
-            
+
             var contractId = "UpgradableContract";
-            
+
             // Initial deployment
             var v1Address = CreateMockUInt160(20);
             var contract = ContractInvocationFactory.RegisterDeployedContract(
                 contractId, v1Address, "mainnet"
             );
-            
+
             Assert.AreEqual(v1Address, contract.NetworkContext.GetCurrentNetworkAddress());
-            
+
             // Simulate upgrade by updating address
             var v2Address = CreateMockUInt160(21);
             contract.NetworkContext.SetNetworkAddress("mainnet", v2Address);
-            
+
             Assert.AreEqual(v2Address, contract.NetworkContext.GetCurrentNetworkAddress());
-            
+
             // Add new network after upgrade
             contract.NetworkContext.SetNetworkAddress("testnet", CreateMockUInt160(22));
             Assert.IsTrue(contract.NetworkContext.HasNetworkAddress("testnet"));
@@ -192,19 +170,19 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         public void TestCrossContractCallChain()
         {
             // Test scenario where contracts call each other in a chain
-            
+
             // A -> B -> C -> D
-            var chainContracts = new List<IContractReference>();
-            
+            var chainContracts = new System.Collections.Generic.List<IContractReference>();
+
             for (int i = 0; i < 4; i++)
             {
                 var contract = ContractInvocationFactory.RegisterDeployedContract(
-                    $"Contract{(char)('A' + i)}", 
+                    $"Contract{(char)('A' + i)}",
                     CreateMockUInt160(30 + i)
                 );
                 chainContracts.Add(contract);
             }
-            
+
             // Verify chain
             Assert.AreEqual(4, chainContracts.Count);
             foreach (var contract in chainContracts)
@@ -219,12 +197,12 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
             // Test using attributes for contract configuration
             var attr = new ContractReferenceAttribute("AttributeContract")
             {
-                ContractHash = "0x" + new string('a', 40),
-                Network = "testnet"
+                TestnetAddress = "0x" + new string('a', 40),
+                ReferenceType = ContractReferenceType.Deployed
             };
-            
+
             var reference = ContractInvocationFactory.CreateFromAttribute(attr);
-            
+
             Assert.IsNotNull(reference);
             Assert.AreEqual("AttributeContract", reference.Identifier);
             Assert.IsTrue(reference is DeployedContractReference);
@@ -233,57 +211,51 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
         [TestMethod]
         public void TestMethodResolverWithComplexTypes()
         {
-            var resolver = new MethodResolver();
-            
-            // Register methods with different parameter requirements
-            resolver.RegisterMethod("transfer", new MethodResolutionInfo
-            {
-                ContractMethodName = "transfer",
-                CallFlags = CallFlags.All,
-                RequiredParameters = new[] { typeof(UInt160), typeof(UInt160), typeof(BigInteger) }
-            });
-            
-            resolver.RegisterMethod("mint", new MethodResolutionInfo
-            {
-                ContractMethodName = "mintTokens",
-                CallFlags = CallFlags.All,
-                RequiredParameters = new[] { typeof(UInt160), typeof(BigInteger) },
-                TransformParameters = (args) => {
-                    // Add default data parameter
-                    return new object[] { args[0], args[1], new byte[0] };
-                }
-            });
-            
-            resolver.RegisterMethod("burn", new MethodResolutionInfo
-            {
-                ContractMethodName = "burnTokens",
-                CallFlags = CallFlags.States | CallFlags.AllowNotify,
-                OptionalParameters = new Dictionary<string, object>
-                {
-                    ["reason"] = "user_request",
-                    ["timestamp"] = 0
-                }
-            });
-            
-            // Test resolution
-            var transferMethod = resolver.ResolveMethod("transfer");
-            Assert.AreEqual(3, transferMethod.RequiredParameters?.Length);
-            
-            var mintMethod = resolver.ResolveMethod("mint");
-            Assert.IsNotNull(mintMethod.TransformParameters);
-            
-            var burnMethod = resolver.ResolveMethod("burn");
-            Assert.IsTrue(burnMethod.OptionalParameters?.ContainsKey("reason"));
+            // Test using the actual static MethodResolver API
+            var contract = ContractInvocationFactory.RegisterDeployedContract(
+                "ComplexContract", CreateMockUInt160(100), "testnet"
+            );
+
+            // Test basic method resolution
+            var transferResolution = MethodResolver.ResolveMethod(
+                contract, "transfer",
+                new object[] { CreateMockUInt160(1), CreateMockUInt160(2), 100 }
+            );
+
+            Assert.IsNotNull(transferResolution);
+            Assert.AreEqual("transfer", transferResolution.OriginalMethodName);
+            Assert.AreEqual("transfer", transferResolution.ResolvedMethodName);
+            Assert.AreEqual(3, transferResolution.OriginalParameters?.Length);
+
+            // Test method resolution with null parameters
+            var balanceResolution = MethodResolver.ResolveMethod(
+                contract, "balanceOf",
+                new object[] { CreateMockUInt160(3) }
+            );
+
+            Assert.IsNotNull(balanceResolution);
+            Assert.AreEqual("balanceOf", balanceResolution.OriginalMethodName);
+            Assert.AreEqual(1, balanceResolution.OriginalParameters?.Length);
+
+            // Test method resolution with different parameter types
+            var complexResolution = MethodResolver.ResolveMethod(
+                contract, "complexMethod",
+                new object[] { "string", 123, true, new byte[] { 1, 2, 3 } }
+            );
+
+            Assert.IsNotNull(complexResolution);
+            Assert.AreEqual("complexMethod", complexResolution.OriginalMethodName);
+            Assert.AreEqual(4, complexResolution.OriginalParameters?.Length);
         }
 
         [TestMethod]
         public void TestNetworkMigrationScenario()
         {
             // Test migrating contracts from testnet to mainnet
-            
+
             var contracts = new[] { "Contract1", "Contract2", "Contract3" };
-            var references = new List<IContractReference>();
-            
+            var references = new System.Collections.Generic.List<IContractReference>();
+
             // Deploy on testnet first
             foreach (var name in contracts)
             {
@@ -293,17 +265,17 @@ namespace Neo.SmartContract.Framework.UnitTests.ContractInvocation
                 );
                 references.Add(reference);
             }
-            
+
             // Prepare mainnet addresses
             foreach (var reference in references)
             {
                 var mainnetAddr = CreateMockUInt160(reference.Identifier.GetHashCode() + 1000);
                 reference.NetworkContext.SetNetworkAddress("mainnet", mainnetAddr);
             }
-            
+
             // Switch to mainnet
             ContractInvocationFactory.SwitchNetwork("mainnet");
-            
+
             // Verify all contracts have mainnet addresses
             foreach (var reference in references)
             {

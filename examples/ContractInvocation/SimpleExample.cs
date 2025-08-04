@@ -1,11 +1,13 @@
-// Simple example demonstrating contract invocation system
-// This shows the basic concept of referencing other contracts
+// Production-ready example demonstrating contract invocation system
+// This shows comprehensive error handling, validation, and best practices
 
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Attributes;
 using Neo.SmartContract.Framework.ContractInvocation;
 using Neo.SmartContract.Framework.ContractInvocation.Attributes;
+using Neo.SmartContract.Framework.ContractInvocation.Exceptions;
 using Neo.SmartContract.Framework.Services;
+using System;
 using System.ComponentModel;
 using System.Numerics;
 
@@ -37,28 +39,174 @@ namespace Examples.ContractInvocation
         [DisplayName("getTokenInfo")]
         public static object[] GetTokenInfo()
         {
-            // This demonstrates the basic concept - in practice, the compiler
-            // would resolve these contract references to proper Contract.Call instructions
+            try
+            {
+                // Validate that contracts are properly resolved
+                if (NeoContract == null || GasContract == null)
+                    throw new ContractNotResolvedException("System", "Contract references not initialized");
 
-            // Get NEO token information
-            var neoHash = NeoContract?.ResolvedHash;
-            var gasHash = GasContract?.ResolvedHash;
+                if (!NeoContract.IsResolved || !GasContract.IsResolved)
+                    throw new ContractNotResolvedException("System", "Contract references not fully resolved");
 
-            // Return basic information about the referenced contracts
-            return new object[] 
-            { 
-                NeoContract?.Identifier ?? "NEO", 
-                neoHash ?? UInt160.Zero,
-                GasContract?.Identifier ?? "GAS",
-                gasHash ?? UInt160.Zero
-            };
+                // Get contract information safely
+                var neoHash = NeoContract.ResolvedHash;
+                var gasHash = GasContract.ResolvedHash;
+
+                // Return comprehensive contract information
+                return new object[] 
+                { 
+                    NeoContract.Identifier,
+                    neoHash ?? UInt160.Zero,
+                    NeoContract.NetworkContext?.CurrentNetwork ?? "unknown",
+                    GasContract.Identifier,
+                    gasHash ?? UInt160.Zero,
+                    GasContract.NetworkContext?.CurrentNetwork ?? "unknown"
+                };
+            }
+            catch (ContractInvocationException)
+            {
+                // Re-throw contract invocation exceptions
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Wrap unexpected exceptions
+                throw new ContractNotResolvedException("System", ex, "Failed to get token information");
+            }
         }
 
         [DisplayName("checkContracts")]
         public static bool CheckContracts()
         {
-            // Check if contracts are resolved
-            return (NeoContract?.IsResolved ?? false) && (GasContract?.IsResolved ?? false);
+            try
+            {
+                // Comprehensive contract health check
+                return ValidateContract(NeoContract, "NEO") && 
+                       ValidateContract(GasContract, "GAS");
+            }
+            catch (Exception ex)
+            {
+                // Log error and return false instead of throwing for health checks
+                ExecutionEngine.Assert(false, $"Contract validation failed: {ex.Message}");
+                return false;
+            }
         }
+
+        [DisplayName("getContractBalance")]
+        public static BigInteger GetContractBalance(UInt160 account, string tokenType)
+        {
+            try
+            {
+                // Input validation
+                if (account == null || account == UInt160.Zero)
+                    throw new ArgumentException("Invalid account address");
+
+                if (string.IsNullOrEmpty(tokenType))
+                    throw new ArgumentException("Token type cannot be empty");
+
+                // Select appropriate contract based on token type
+                IContractReference? tokenContract = tokenType.ToUpperInvariant() switch
+                {
+                    "NEO" => NeoContract,
+                    "GAS" => GasContract,
+                    _ => throw new ArgumentException($"Unsupported token type: {tokenType}")
+                };
+
+                if (tokenContract == null || !tokenContract.IsResolved)
+                    throw new ContractNotResolvedException(tokenType, "Contract not available");
+
+                // Call balanceOf method with proper error handling
+                var result = Contract.Call(tokenContract.ResolvedHash!, "balanceOf", CallFlags.ReadOnly, account);
+                
+                if (result == null)
+                    return 0;
+
+                return (BigInteger)result;
+            }
+            catch (ContractInvocationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ContractNotResolvedException(tokenType, ex, $"Failed to get balance for {tokenType}");
+            }
+        }
+
+        [DisplayName("batchGetBalances")]
+        public static BigInteger[] BatchGetBalances(UInt160 account)
+        {
+            try
+            {
+                // Input validation
+                if (account == null || account == UInt160.Zero)
+                    throw new ArgumentException("Invalid account address");
+
+                var results = new BigInteger[2];
+                
+                // Get NEO balance
+                try
+                {
+                    results[0] = GetContractBalance(account, "NEO");
+                }
+                catch (Exception ex)
+                {
+                    // Log error but continue with other tokens
+                    ExecutionEngine.Assert(false, $"Failed to get NEO balance: {ex.Message}");
+                    results[0] = 0;
+                }
+
+                // Get GAS balance
+                try
+                {
+                    results[1] = GetContractBalance(account, "GAS");
+                }
+                catch (Exception ex)
+                {
+                    // Log error but continue
+                    ExecutionEngine.Assert(false, $"Failed to get GAS balance: {ex.Message}");
+                    results[1] = 0;
+                }
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                throw new ContractNotResolvedException("BatchOperation", ex, "Failed to get batch balances");
+            }
+        }
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Validates that a contract reference is properly configured and resolved.
+        /// </summary>
+        /// <param name="contract">The contract reference to validate</param>
+        /// <param name="contractName">The contract name for error reporting</param>
+        /// <returns>True if valid, false otherwise</returns>
+        private static bool ValidateContract(IContractReference? contract, string contractName)
+        {
+            if (contract == null)
+            {
+                ExecutionEngine.Assert(false, $"{contractName} contract reference is null");
+                return false;
+            }
+
+            if (!contract.IsResolved)
+            {
+                ExecutionEngine.Assert(false, $"{contractName} contract is not resolved");
+                return false;
+            }
+
+            if (contract.ResolvedHash == null || contract.ResolvedHash == UInt160.Zero)
+            {
+                ExecutionEngine.Assert(false, $"{contractName} contract has invalid hash");
+                return false;
+            }
+
+            return true;
+        }
+
+        #endregion
     }
 }

@@ -10,6 +10,9 @@
 // modifications are permitted.
 
 using System;
+using System.Threading.Tasks;
+using Neo.SmartContract.Framework.ContractInvocation.Exceptions;
+using Neo.SmartContract.Framework.ContractInvocation.Validation;
 using Neo.SmartContract.Framework.Services;
 
 namespace Neo.SmartContract.Framework.ContractInvocation
@@ -44,28 +47,120 @@ namespace Neo.SmartContract.Framework.ContractInvocation
         /// <returns>The result of the contract method call</returns>
         protected virtual object InvokeMethod(string method, CallFlags flags, params object?[]? args)
         {
-            // Use MethodResolver for enhanced method resolution
-            var resolution = MethodResolver.ResolveMethod(ContractReference, method, args, GetSourceContractType());
+            // Input validation
+            InputValidator.ValidateMethodName(method);
 
-            if (!resolution.IsResolved)
+            try
             {
-                throw new InvalidOperationException($"Failed to resolve method '{method}': {resolution.ErrorMessage}");
-            }
+                // Use MethodResolver for enhanced method resolution
+                var resolution = MethodResolver.ResolveMethod(ContractReference, method, args, GetSourceContractType());
 
-            // Handle development contracts that aren't resolved yet
-            if (ContractReference is DevelopmentContractReference devRef && !devRef.IsResolved)
+                if (!resolution.IsResolved)
+                {
+                    if (resolution.ResolutionError != null)
+                        throw resolution.ResolutionError;
+
+                    throw new ContractNotResolvedException(
+                        ContractReference.Identifier,
+                        resolution.ErrorMessage ?? "Method resolution failed for unknown reason.");
+                }
+
+                // Handle development contracts that aren't resolved yet
+                if (ContractReference is DevelopmentContractReference devRef && !devRef.IsResolved)
+                {
+                    return HandleDevelopmentContractInvocation(resolution);
+                }
+
+                // Ensure contract is resolved for deployed contracts
+                if (!ContractReference.IsResolved)
+                {
+                    throw new ContractNotResolvedException(
+                        ContractReference.Identifier,
+                        $"Contract reference is not resolved. Cannot invoke method '{method}'.");
+                }
+
+                // Validate contract hash
+                InputValidator.ValidateContractHash(ContractReference.ResolvedHash);
+
+                // Use resolved method name and parameters
+                return Contract.Call(ContractReference.ResolvedHash!, resolution.ResolvedMethodName, resolution.CallFlags, resolution.ResolvedParameters);
+            }
+            catch (ContractInvocationException)
             {
-                return HandleDevelopmentContractInvocation(resolution);
+                // Re-throw contract invocation exceptions without wrapping
+                throw;
             }
-
-            // Ensure contract is resolved for deployed contracts
-            if (!ContractReference.IsResolved)
+            catch (Exception ex)
             {
-                throw new InvalidOperationException($"Contract reference '{ContractReference.Identifier}' is not resolved. Cannot invoke method '{method}'.");
+                // Wrap other exceptions in a contract invocation exception
+                throw new ContractNotResolvedException(
+                    ContractReference.Identifier,
+                    ex,
+                    $"Unexpected error invoking method '{method}': {ex.Message}");
             }
+        }
 
-            // Use resolved method name and parameters
-            return Contract.Call(ContractReference.ResolvedHash!, resolution.ResolvedMethodName, resolution.CallFlags, resolution.ResolvedParameters);
+        /// <summary>
+        /// Invokes a contract method asynchronously with the specified parameters.
+        /// This method provides async resolution for better performance in development scenarios.
+        /// </summary>
+        /// <param name="method">The method name to invoke</param>
+        /// <param name="flags">The call flags for the invocation</param>
+        /// <param name="args">The method arguments</param>
+        /// <returns>The result of the contract method call</returns>
+        protected virtual async Task<object> InvokeMethodAsync(string method, CallFlags flags, params object?[]? args)
+        {
+            // Input validation
+            InputValidator.ValidateMethodName(method);
+
+            try
+            {
+                // Use MethodResolver for enhanced method resolution
+                var resolution = await MethodResolver.ResolveMethodAsync(ContractReference, method, args, GetSourceContractType());
+
+                if (!resolution.IsResolved)
+                {
+                    if (resolution.ResolutionError != null)
+                        throw resolution.ResolutionError;
+
+                    throw new ContractNotResolvedException(
+                        ContractReference.Identifier,
+                        resolution.ErrorMessage ?? "Method resolution failed for unknown reason.");
+                }
+
+                // Handle development contracts that aren't resolved yet
+                if (ContractReference is DevelopmentContractReference devRef && !devRef.IsResolved)
+                {
+                    return HandleDevelopmentContractInvocation(resolution);
+                }
+
+                // Ensure contract is resolved for deployed contracts
+                if (!ContractReference.IsResolved)
+                {
+                    throw new ContractNotResolvedException(
+                        ContractReference.Identifier,
+                        $"Contract reference is not resolved. Cannot invoke method '{method}'.");
+                }
+
+                // Validate contract hash
+                InputValidator.ValidateContractHash(ContractReference.ResolvedHash);
+
+                // Use resolved method name and parameters
+                return Contract.Call(ContractReference.ResolvedHash!, resolution.ResolvedMethodName, resolution.CallFlags, resolution.ResolvedParameters);
+            }
+            catch (ContractInvocationException)
+            {
+                // Re-throw contract invocation exceptions without wrapping
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Wrap other exceptions in a contract invocation exception
+                throw new ContractNotResolvedException(
+                    ContractReference.Identifier,
+                    ex,
+                    $"Unexpected error invoking method '{method}': {ex.Message}");
+            }
         }
 
         /// <summary>

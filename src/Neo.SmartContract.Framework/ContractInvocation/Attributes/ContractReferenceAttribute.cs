@@ -10,6 +10,7 @@
 // modifications are permitted.
 
 using System;
+using Neo.SmartContract.Framework.ContractInvocation.Validation;
 
 namespace Neo.SmartContract.Framework.ContractInvocation.Attributes
 {
@@ -68,7 +69,48 @@ namespace Neo.SmartContract.Framework.ContractInvocation.Attributes
         /// <param name="identifier">The contract identifier</param>
         public ContractReferenceAttribute(string identifier)
         {
-            Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
+            InputValidator.ValidateContractIdentifier(identifier);
+            Identifier = identifier;
+        }
+
+        /// <summary>
+        /// Sets the private network address with validation.
+        /// </summary>
+        /// <param name="address">The address to set</param>
+        public void SetPrivnetAddress(string address)
+        {
+            InputValidator.ValidateAddress(address);
+            PrivnetAddress = address;
+        }
+
+        /// <summary>
+        /// Sets the test network address with validation.
+        /// </summary>
+        /// <param name="address">The address to set</param>
+        public void SetTestnetAddress(string address)
+        {
+            InputValidator.ValidateAddress(address);
+            TestnetAddress = address;
+        }
+
+        /// <summary>
+        /// Sets the main network address with validation.
+        /// </summary>
+        /// <param name="address">The address to set</param>
+        public void SetMainnetAddress(string address)
+        {
+            InputValidator.ValidateAddress(address);
+            MainnetAddress = address;
+        }
+
+        /// <summary>
+        /// Sets the project path for development contracts with validation.
+        /// </summary>
+        /// <param name="path">The project path to set</param>
+        public void SetProjectPath(string path)
+        {
+            InputValidator.ValidateProjectPath(path);
+            ProjectPath = path;
         }
     }
 

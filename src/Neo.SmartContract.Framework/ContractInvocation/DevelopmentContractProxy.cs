@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Neo.SmartContract.Framework.ContractInvocation.Exceptions;
 using Neo.SmartContract.Framework.Services;
 
 namespace Neo.SmartContract.Framework.ContractInvocation
@@ -97,8 +98,9 @@ namespace Neo.SmartContract.Framework.ContractInvocation
                 if (methodInfo == null)
                 {
                     throw new MethodNotFoundException(
-                        $"Method '{methodName}' not found in development contract '{SourceContractType.Name}'. " +
-                        $"Available methods: {string.Join(", ", GetAvailableMethodNames())}");
+                        ContractReference?.Identifier ?? SourceContractType.Name,
+                        methodName,
+                        GetAvailableMethodNames());
                 }
                 _methodCache[cacheKey] = methodInfo;
             }
@@ -205,12 +207,4 @@ namespace Neo.SmartContract.Framework.ContractInvocation
         }
     }
 
-    /// <summary>
-    /// Exception thrown when a method is not found in the development contract.
-    /// </summary>
-    public class MethodNotFoundException : Exception
-    {
-        public MethodNotFoundException(string message) : base(message) { }
-        public MethodNotFoundException(string message, Exception innerException) : base(message, innerException) { }
-    }
 }

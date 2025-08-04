@@ -13,7 +13,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Neo.SmartContract.Framework.ContractInvocation.Attributes;
+using Neo.SmartContract.Framework.ContractInvocation.Caching;
+using Neo.SmartContract.Framework.ContractInvocation.Exceptions;
+using Neo.SmartContract.Framework.ContractInvocation.Validation;
 using Neo.SmartContract.Framework.Services;
 
 namespace Neo.SmartContract.Framework.ContractInvocation
@@ -21,10 +25,11 @@ namespace Neo.SmartContract.Framework.ContractInvocation
     /// <summary>
     /// Resolves method calls for both standard and non-standard contract methods.
     /// Handles development contracts, custom methods, and parameter transformations.
+    /// Thread-safe and production-ready with comprehensive error handling.
     /// </summary>
     public static class MethodResolver
     {
-        private static readonly Dictionary<string, MethodResolutionInfo> _resolutionCache = new();
+        private static readonly MethodResolutionCache _cache = new();
 
         /// <summary>
         /// Resolves a method call for the specified contract reference.
@@ -40,17 +45,51 @@ namespace Neo.SmartContract.Framework.ContractInvocation
             object?[]? parameters,
             Type? sourceType = null)
         {
-            var cacheKey = GenerateCacheKey(contractReference, methodName, parameters, sourceType);
+            // Input validation
+            if (contractReference == null)
+                throw new ArgumentNullException(nameof(contractReference));
 
-            if (_resolutionCache.TryGetValue(cacheKey, out var cached))
-            {
+            InputValidator.ValidateMethodName(methodName);
+
+            // Try to get from cache first
+            var cached = _cache.Get(contractReference, methodName, parameters, sourceType);
+            if (cached != null)
                 return cached;
-            }
 
+            // Perform resolution and cache the result
             var resolution = PerformMethodResolution(contractReference, methodName, parameters, sourceType);
-            _resolutionCache[cacheKey] = resolution;
+            _cache.Set(contractReference, methodName, parameters, resolution, sourceType);
 
             return resolution;
+        }
+
+        /// <summary>
+        /// Resolves a method call asynchronously for the specified contract reference.
+        /// </summary>
+        /// <param name="contractReference">The contract reference</param>
+        /// <param name="methodName">The method name to invoke</param>
+        /// <param name="parameters">The method parameters</param>
+        /// <param name="sourceType">Optional source contract type for development contracts</param>
+        /// <returns>Method resolution information</returns>
+        public static async Task<MethodResolutionInfo> ResolveMethodAsync(
+            IContractReference contractReference,
+            string methodName,
+            object?[]? parameters,
+            Type? sourceType = null)
+        {
+            // Input validation
+            if (contractReference == null)
+                throw new ArgumentNullException(nameof(contractReference));
+
+            InputValidator.ValidateMethodName(methodName);
+
+            // Use cache with async factory
+            return await _cache.GetOrSetAsync(
+                contractReference,
+                methodName,
+                parameters,
+                () => Task.FromResult(PerformMethodResolution(contractReference, methodName, parameters, sourceType)),
+                sourceType);
         }
 
         /// <summary>
@@ -119,8 +158,15 @@ namespace Neo.SmartContract.Framework.ContractInvocation
 
             if (methods.Length == 0)
             {
+                var availableMethods = sourceType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Select(m => m.Name)
+                    .Distinct()
+                    .ToArray();
+
                 throw new MethodNotFoundException(
-                    $"Method '{resolution.OriginalMethodName}' not found in development contract '{sourceType.Name}'.");
+                    devRef.Identifier,
+                    resolution.OriginalMethodName,
+                    availableMethods);
             }
 
             // Find best matching method
@@ -128,7 +174,9 @@ namespace Neo.SmartContract.Framework.ContractInvocation
             if (bestMatch == null)
             {
                 throw new MethodNotFoundException(
-                    $"No compatible overload found for method '{resolution.OriginalMethodName}' with provided parameters.");
+                    devRef.Identifier,
+                    resolution.OriginalMethodName,
+                    methods.Select(m => $"{m.Name}({string.Join(", ", m.GetParameters().Select(p => p.ParameterType.Name))})").ToArray());
             }
 
             resolution.SourceMethod = bestMatch;
@@ -155,8 +203,14 @@ namespace Neo.SmartContract.Framework.ContractInvocation
 
             if (contractMethod.Name == null)
             {
+                var availableMethods = manifest.Abi.Methods
+                    .Select(m => m.Name)
+                    .ToArray();
+
                 throw new MethodNotFoundException(
-                    $"Method '{resolution.OriginalMethodName}' not found in deployed contract manifest.");
+                    deployedRef.Identifier,
+                    resolution.OriginalMethodName,
+                    availableMethods);
             }
 
             resolution.ResolvedMethodName = contractMethod.Name;
@@ -370,7 +424,26 @@ namespace Neo.SmartContract.Framework.ContractInvocation
         /// </summary>
         public static void ClearCache()
         {
-            _resolutionCache.Clear();
+            _cache.Clear();
+        }
+
+        /// <summary>
+        /// Invalidates cache entries for a specific contract.
+        /// </summary>
+        /// <param name="contractIdentifier">The contract identifier</param>
+        public static void InvalidateContract(string contractIdentifier)
+        {
+            InputValidator.ValidateContractIdentifier(contractIdentifier);
+            _cache.InvalidateContract(contractIdentifier);
+        }
+
+        /// <summary>
+        /// Gets cache statistics for monitoring and diagnostics.
+        /// </summary>
+        /// <returns>Cache performance statistics</returns>
+        public static CacheStatistics GetCacheStatistics()
+        {
+            return _cache.Statistics;
         }
     }
 
