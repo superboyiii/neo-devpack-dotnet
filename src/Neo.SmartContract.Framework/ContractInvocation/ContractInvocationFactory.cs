@@ -49,11 +49,11 @@ namespace Neo.SmartContract.Framework.ContractInvocation
                 throw new ArgumentNullException(nameof(identifier));
             if (string.IsNullOrEmpty(projectPath))
                 throw new ArgumentNullException(nameof(projectPath));
-            
+
             // Check if already registered
             if (_registeredContracts.TryGetValue(identifier, out var existing) && existing is DevelopmentContractReference devRef)
                 return devRef;
-                
+
             var reference = new DevelopmentContractReference(identifier, projectPath, networkContext ?? DefaultNetworkContext);
             _registeredContracts[identifier] = reference;
             return reference;
@@ -72,7 +72,7 @@ namespace Neo.SmartContract.Framework.ContractInvocation
             // Check if already registered
             if (_registeredContracts.TryGetValue(identifier, out var existing) && existing is DeployedContractReference depRef)
                 return depRef;
-                
+
             var reference = new DeployedContractReference(identifier, networkContext ?? DefaultNetworkContext);
             _registeredContracts[identifier] = reference;
             return reference;
@@ -93,7 +93,7 @@ namespace Neo.SmartContract.Framework.ContractInvocation
             // Check if already registered
             if (_registeredContracts.TryGetValue(identifier, out var existing) && existing is DeployedContractReference depRef)
                 return depRef;
-                
+
             var reference = DeployedContractReference.Create(identifier, address, network);
             _registeredContracts[identifier] = reference;
             return reference;
@@ -118,7 +118,7 @@ namespace Neo.SmartContract.Framework.ContractInvocation
             // Check if already registered
             if (_registeredContracts.TryGetValue(identifier, out var existing) && existing is DeployedContractReference depRef)
                 return depRef;
-                
+
             var reference = DeployedContractReference.CreateMultiNetwork(
                 identifier, privnetAddress, testnetAddress, mainnetAddress, currentNetwork);
             _registeredContracts[identifier] = reference;
