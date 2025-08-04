@@ -128,25 +128,25 @@ namespace Neo.SmartContract.Framework.UnitTests.TestClasses
         {
         }
 
-        [ContractMethod(ReadOnly = true)]
+        [ContractMethod("balanceOf", CallFlags.ReadOnly)]
         public BigInteger BalanceOf(UInt160 account)
         {
             return (BigInteger)InvokeReadOnly("balanceOf", account);
         }
 
-        [ContractMethod(ReadOnly = true)]
+        [ContractMethod("totalSupply", CallFlags.ReadOnly)]
         public BigInteger TotalSupply()
         {
             return (BigInteger)InvokeReadOnly("totalSupply");
         }
 
-        [ContractMethod(ReadOnly = true)]
+        [ContractMethod("symbol", CallFlags.ReadOnly)]
         public string Symbol()
         {
             return (string)InvokeReadOnly("symbol");
         }
 
-        [ContractMethod(ReadOnly = true)]
+        [ContractMethod("decimals", CallFlags.ReadOnly)]
         public byte Decimals()
         {
             return (byte)InvokeReadOnly("decimals");

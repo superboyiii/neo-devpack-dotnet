@@ -113,25 +113,4 @@ namespace Neo.SmartContract.Framework.ContractInvocation.Attributes
             ProjectPath = path;
         }
     }
-
-    /// <summary>
-    /// Specifies the type of contract reference.
-    /// </summary>
-    public enum ContractReferenceType
-    {
-        /// <summary>
-        /// Automatically determine the reference type based on the identifier and context.
-        /// </summary>
-        Auto,
-
-        /// <summary>
-        /// Reference to a contract under development.
-        /// </summary>
-        Development,
-
-        /// <summary>
-        /// Reference to a deployed contract on the blockchain.
-        /// </summary>
-        Deployed
-    }
 }

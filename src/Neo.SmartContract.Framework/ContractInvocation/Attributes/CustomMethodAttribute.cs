@@ -35,30 +35,6 @@ namespace Neo.SmartContract.Framework.ContractInvocation.Attributes
         public CallFlags CallFlags { get; set; } = CallFlags.All;
 
         /// <summary>
-        /// Gets or sets whether this method is read-only.
-        /// When true, CallFlags.ReadOnly is used regardless of the CallFlags setting.
-        /// </summary>
-        public bool ReadOnly { get; set; }
-
-        /// <summary>
-        /// Gets or sets whether this method modifies state.
-        /// When true, CallFlags.States is included in the call flags.
-        /// </summary>
-        public bool ModifiesState { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether this method can make contract calls.
-        /// When true, CallFlags.AllowCall is included in the call flags.
-        /// </summary>
-        public bool AllowCall { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets whether this method can emit notifications.
-        /// When true, CallFlags.AllowNotify is included in the call flags.
-        /// </summary>
-        public bool AllowNotify { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets the parameter transformation strategy.
         /// </summary>
         public ParameterTransformStrategy ParameterTransform { get; set; } = ParameterTransformStrategy.None;
@@ -114,26 +90,6 @@ namespace Neo.SmartContract.Framework.ContractInvocation.Attributes
             MethodName = methodName;
         }
 
-        /// <summary>
-        /// Gets the effective call flags based on the attribute settings.
-        /// </summary>
-        /// <returns>The computed call flags</returns>
-        public CallFlags GetEffectiveCallFlags()
-        {
-            if (ReadOnly)
-                return CallFlags.ReadOnly;
-
-            var flags = CallFlags.None;
-
-            if (ModifiesState)
-                flags |= CallFlags.States;
-            if (AllowCall)
-                flags |= CallFlags.AllowCall;
-            if (AllowNotify)
-                flags |= CallFlags.AllowNotify;
-
-            return flags == CallFlags.None ? CallFlags : flags;
-        }
 
         /// <summary>
         /// Validates parameters according to the configured constraints.
@@ -238,36 +194,5 @@ namespace Neo.SmartContract.Framework.ContractInvocation.Attributes
             // Placeholder for actual serialization implementation
             return new byte[0];
         }
-    }
-
-    /// <summary>
-    /// Specifies parameter transformation strategies for custom methods.
-    /// </summary>
-    public enum ParameterTransformStrategy
-    {
-        /// <summary>
-        /// No parameter transformation.
-        /// </summary>
-        None,
-
-        /// <summary>
-        /// Serialize all parameters into a single byte array.
-        /// </summary>
-        SerializeToByteArray,
-
-        /// <summary>
-        /// Wrap all parameters in a single array parameter.
-        /// </summary>
-        WrapInArray,
-
-        /// <summary>
-        /// Flatten array parameters into individual parameters.
-        /// </summary>
-        FlattenArrays,
-
-        /// <summary>
-        /// Apply custom transformation based on CustomParameterFormat.
-        /// </summary>
-        Custom
     }
 }
