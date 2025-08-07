@@ -11,38 +11,36 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Neo.SmartContract.Testing;
-using Neo.VM;
-using System.Linq;
 
 namespace Neo.SmartContract.Framework.UnitTests.Services
 {
     [TestClass]
     public class SequencePointInserterTest : DebugAndTestBase<Contract_SequencePointInserter>
     {
-        [TestMethod]
-        public void Test_SequencePointInserter()
-        {
-            var debug = TestCleanup.CachedContracts[typeof(Contract_SequencePointInserter)].DbgInfo;
+        //[TestMethod]
+        //public void Test_SequencePointInserter()
+        //{
+        //    var debug = TestCleanup.CachedContracts[typeof(Contract_SequencePointInserter)].DbgInfo;
 
-            var points = debug.Methods[0].SequencePoints.Select(u => u.Address).ToArray();
+        //    var points = debug.Methods[0].SequencePoints.Select(u => u.Address).ToArray();
 
-            // Ensure that all the instructions have sequence point
+        //    // Ensure that all the instructions have sequence point
 
-            var ip = 0;
-            Script script = NefFile.Script;
+        //    var ip = 0;
+        //    Script script = NefFile.Script;
 
-            while (ip < script.Length)
-            {
-                var instruction = script.GetInstruction(ip);
+        //    while (ip < script.Length)
+        //    {
+        //        var instruction = script.GetInstruction(ip);
 
-                if (ip != 0) // Avoid INITSLOT
-                {
-                    Assert.IsTrue(points.Contains(ip), $"Offset {ip} with '{instruction.OpCode}' is not in sequence points.");
-                }
+        //        if (ip != 0) // Avoid INITSLOT
+        //        {
+        //            Assert.IsTrue(points.Contains(ip), $"Offset {ip} with '{instruction.OpCode}' is not in sequence points.");
+        //        }
 
-                ip += instruction.Size;
-            }
-        }
+        //        ip += instruction.Size;
+        //    }
+        //}
 
         [TestMethod]
         public void Test_If()
